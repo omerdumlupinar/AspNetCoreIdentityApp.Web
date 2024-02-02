@@ -1,7 +1,9 @@
-﻿using AspNetCoreIdentityApp.Web.Models;
+﻿using AspNetCoreIdentityApp.Web.Extenisons;
+using AspNetCoreIdentityApp.Web.Models;
 using AspNetCoreIdentityApp.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Diagnostics;
 
 namespace AspNetCoreIdentityApp.Web.Controllers
@@ -34,7 +36,7 @@ namespace AspNetCoreIdentityApp.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInViewModel model, string returnUrl = null)
         {
-            returnUrl = returnUrl ?? Url.Action("Index", "Home");
+            returnUrl = returnUrl ?? Url.Action("Index", "Member");
 
             var hasUser = await _userManager.FindByEmailAsync(model.Email);
 
@@ -44,12 +46,24 @@ namespace AspNetCoreIdentityApp.Web.Controllers
                 return View();
             }
 
-            var signInResult = await _signInManager.PasswordSignInAsync(hasUser, model.Password, model.RememberMe,false);
+            var signInResult = await _signInManager.PasswordSignInAsync(hasUser, model.Password, model.RememberMe,true);
+
             if (signInResult.Succeeded)
             {
                 return Redirect(returnUrl);
             }
-                        
+
+            if (signInResult.IsLockedOut)
+            {
+                ModelState.AddModelErrorList(new() { "Hesabınız kilitlendi 3 dakika boyunca giriş yapamassınız." });
+                return View();
+            }
+
+            ModelState.AddModelErrorList(new List<string>() 
+            { 
+                $"Email veya Şifre yanlış!",
+                $"Başarısız giriş sayısı:{await _userManager.GetAccessFailedCountAsync(hasUser)}"
+            });
             return View();
         }
 
@@ -80,10 +94,12 @@ namespace AspNetCoreIdentityApp.Web.Controllers
                 return RedirectToAction(nameof(HomeController.SignUp));
             }
 
-            foreach (IdentityError item in identityResul.Errors)
-            {
-                ModelState.AddModelError(string.Empty, item.Description);
-            }
+            ModelState.AddModelErrorList(identityResul.Errors.Select(x=>x.Description).ToList());
+
+            //foreach (IdentityError item in identityResul.Errors)
+            //{
+            //    ModelState.AddModelError(string.Empty, item.Description);
+            //}
             return View();
         }
 

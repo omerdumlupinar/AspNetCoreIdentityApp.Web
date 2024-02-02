@@ -11,6 +11,21 @@ builder.Services.AddDbContext<AppDbContext>();
 
 builder.Services.AddIdentityWhitExtenisons();
 
+builder.Services.ConfigureApplicationCookie(opt =>
+{
+    var cookieBuilder= new CookieBuilder();
+
+    cookieBuilder.Name = "AspNetCoreIdentityAppCookie";
+    opt.LoginPath = new PathString("/Home/SignIn");
+    opt.LogoutPath = new PathString("/Member/LogOut");
+    opt.Cookie= cookieBuilder;
+    opt.ExpireTimeSpan=TimeSpan.FromDays(60);
+    //true olmasý her giriþinde ExpireTimeSpan 60 gün uzatacak.
+    opt.SlidingExpiration = true;
+
+
+});
+
 
 var app = builder.Build();
 
@@ -27,7 +42,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
