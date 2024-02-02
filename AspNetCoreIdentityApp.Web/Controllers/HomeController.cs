@@ -12,10 +12,12 @@ namespace AspNetCoreIdentityApp.Web.Controllers
 
         private readonly UserManager<AppUser> _userManager;
 
-        public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager)
+        private readonly SignInManager<AppUser> _signInManager;
+        public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
         {
             _logger = logger;
             _userManager = userManager;
+            _signInManager = signInManager;
         }
 
         public IActionResult Index()
@@ -23,10 +25,34 @@ namespace AspNetCoreIdentityApp.Web.Controllers
             return View();
         }
 
-        public IActionResult Privacy()
+
+        public IActionResult SignIn()
         {
             return View();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SignIn(SignInViewModel model, string returnUrl = null)
+        {
+            returnUrl = returnUrl ?? Url.Action("Index", "Home");
+
+            var hasUser = await _userManager.FindByEmailAsync(model.Email);
+
+            if (hasUser == null)
+            {
+                ModelState.AddModelError(string.Empty, "Email veya şifre hatalı.");
+                return View();
+            }
+
+            var signInResult = await _signInManager.PasswordSignInAsync(hasUser, model.Password, model.RememberMe,false);
+            if (signInResult.Succeeded)
+            {
+                return Redirect(returnUrl);
+            }
+                        
+            return View();
+        }
+
 
         public async Task<IActionResult> SignUp()
         {
@@ -37,7 +63,7 @@ namespace AspNetCoreIdentityApp.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> SignUp(SignUpViewModel request)
         {
-            if (!ModelState.IsValid)          
+            if (!ModelState.IsValid)
                 return View();
 
             var identityResul = await _userManager.CreateAsync(new()

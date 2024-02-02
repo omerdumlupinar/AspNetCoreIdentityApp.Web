@@ -1,3 +1,4 @@
+using AspNetCoreIdentityApp.Web.Extenisons;
 using AspNetCoreIdentityApp.Web.Models;
 using Microsoft.Extensions.Configuration;
 
@@ -8,7 +9,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<AppDbContext>();
 
-builder.Services.AddIdentity<AppUser,AppRole>().AddEntityFrameworkStores<AppDbContext>();
+builder.Services.AddIdentityWhitExtenisons();
 
 
 var app = builder.Build();
@@ -30,7 +31,12 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+
+app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=SignUp}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
