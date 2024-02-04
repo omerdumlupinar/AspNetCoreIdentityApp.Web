@@ -28,78 +28,6 @@ namespace AspNetCoreIdentityApp.Web.Controllers
             return View();
         }
 
-
-
-        public IActionResult ResetPassword()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPaswordViewModel)
-        {
-            var hasuser = await _userManager.FindByEmailAsync(resetPaswordViewModel.Email);
-            if (hasuser == null)
-            {
-                ModelState.AddModelError(string.Empty, "Bu email adresine ait kullanıcı bulunamadı.");
-                return View();
-            }
-
-            string passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(hasuser);
-            var passwordResetLink = Url.Action("ReplacePassword", "Home", new
-            {
-                userId = hasuser.Id,
-                token = passwordResetToken
-            },HttpContext.Request.Scheme);
-
-            //https://localhost:7195
-            //uhqe npig hnsk nydp
-
-            await _emailServices.SendResetPasswordEmail(passwordResetLink, hasuser.Email);
-
-            TempData["SuccessMessage"] = "Şifre yenileme linki e-posta asdresinize gönderilmiştir.";
-
-            return RedirectToAction(nameof(ResetPassword));
-        }
-
-
-        public IActionResult ReplacePassword( string userId,string token)
-        {
-            TempData["userId"]=userId; TempData["token"]=token; 
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ReplacePassword(ReplacePasswordViewModel replacePasswordViewModel)
-        {
-            var userId = TempData["userId"].ToString();
-            var token = TempData["token"].ToString();
-
-            var hasUser = await _userManager.FindByIdAsync(userId);
-            if (hasUser == null)
-            {
-                ModelState.AddModelError(string.Empty, "Kullanıcı bulunamamıştır");
-                return View();
-            }
-
-            var result=await _userManager.ResetPasswordAsync(hasUser, token,replacePasswordViewModel.Password);
-            if (result.Succeeded)
-            {
-                TempData["SuccessMessage"] = "Şifreniz başarılı bir şekilde güncellenmiştir";
-            }
-            else
-            {
-                ModelState.AddModelErrorList(result.Errors.Select(x => x.Description).ToList());
-
-            }
-
-            return View();
-
-        }
-
-
-
-
         public IActionResult SignIn()
         {
             return View();
@@ -145,7 +73,6 @@ namespace AspNetCoreIdentityApp.Web.Controllers
             return View();
         }
 
-
         [HttpPost]
         public async Task<IActionResult> SignUp(SignUpViewModel request)
         {
@@ -173,6 +100,73 @@ namespace AspNetCoreIdentityApp.Web.Controllers
             //    ModelState.AddModelError(string.Empty, item.Description);
             //}
             return View();
+        }
+
+        public IActionResult ResetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPaswordViewModel)
+        {
+            var hasuser = await _userManager.FindByEmailAsync(resetPaswordViewModel.Email);
+            if (hasuser == null)
+            {
+                ModelState.AddModelError(string.Empty, "Bu email adresine ait kullanıcı bulunamadı.");
+                return View();
+            }
+
+            string passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(hasuser);
+            var passwordResetLink = Url.Action("ReplacePassword", "Home", new
+            {
+                userId = hasuser.Id,
+                token = passwordResetToken
+            }, HttpContext.Request.Scheme);
+
+            //https://localhost:7195
+            //uhqe npig hnsk nydp
+
+            await _emailServices.SendResetPasswordEmail(passwordResetLink, hasuser.Email);
+
+            TempData["SuccessMessage"] = "Şifre yenileme linki e-posta asdresinize gönderilmiştir.";
+
+            return RedirectToAction(nameof(ResetPassword));
+        }
+
+
+        public IActionResult ReplacePassword(string userId, string token)
+        {
+            TempData["userId"] = userId; TempData["token"] = token;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReplacePassword(ReplacePasswordViewModel replacePasswordViewModel)
+        {
+            var userId = TempData["userId"].ToString();
+            var token = TempData["token"].ToString();
+
+            var hasUser = await _userManager.FindByIdAsync(userId);
+            if (hasUser == null)
+            {
+                ModelState.AddModelError(string.Empty, "Kullanıcı bulunamamıştır");
+                return View();
+            }
+
+            var result = await _userManager.ResetPasswordAsync(hasUser, token, replacePasswordViewModel.Password);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Şifreniz başarılı bir şekilde güncellenmiştir";
+            }
+            else
+            {
+                ModelState.AddModelErrorList(result.Errors.Select(x => x.Description).ToList());
+
+            }
+
+            return View();
+
         }
 
 
