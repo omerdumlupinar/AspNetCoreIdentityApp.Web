@@ -46,11 +46,11 @@ namespace AspNetCoreIdentityApp.Web.Controllers
             }
 
             string passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(hasuser);
-            var passwordResetLink = Url.Action("ResetPassword", "Home", new
+            var passwordResetLink = Url.Action("ReplacePassword", "Home", new
             {
                 userId = hasuser.Id,
                 token = passwordResetToken
-            });
+            },HttpContext.Request.Scheme);
 
             //https://localhost:7195
             //uhqe npig hnsk nydp
@@ -62,6 +62,40 @@ namespace AspNetCoreIdentityApp.Web.Controllers
             return RedirectToAction(nameof(ResetPassword));
         }
 
+
+        public IActionResult ReplacePassword( string userId,string token)
+        {
+            TempData["userId"]=userId; TempData["token"]=token; 
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReplacePassword(ReplacePasswordViewModel replacePasswordViewModel)
+        {
+            var userId = TempData["userId"].ToString();
+            var token = TempData["token"].ToString();
+
+            var hasUser = await _userManager.FindByIdAsync(userId);
+            if (hasUser == null)
+            {
+                ModelState.AddModelError(string.Empty, "Kullanıcı bulunamamıştır");
+                return View();
+            }
+
+            var result=await _userManager.ResetPasswordAsync(hasUser, token,replacePasswordViewModel.Password);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Şifreniz başarılı bir şekilde güncellenmiştir";
+            }
+            else
+            {
+                ModelState.AddModelErrorList(result.Errors.Select(x => x.Description).ToList());
+
+            }
+
+            return View();
+
+        }
 
 
 
