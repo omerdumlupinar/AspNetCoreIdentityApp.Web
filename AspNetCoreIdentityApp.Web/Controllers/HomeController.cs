@@ -1,5 +1,6 @@
 ﻿using AspNetCoreIdentityApp.Web.Extenisons;
 using AspNetCoreIdentityApp.Web.Models;
+using AspNetCoreIdentityApp.Web.Services;
 using AspNetCoreIdentityApp.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,21 +12,58 @@ namespace AspNetCoreIdentityApp.Web.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-
         private readonly UserManager<AppUser> _userManager;
-
         private readonly SignInManager<AppUser> _signInManager;
-        public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
+        private readonly IEmailServices _emailServices;
+        public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IEmailServices emailServices)
         {
             _logger = logger;
             _userManager = userManager;
             _signInManager = signInManager;
+            _emailServices = emailServices;
         }
 
         public IActionResult Index()
         {
             return View();
         }
+
+
+
+        public IActionResult ResetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPaswordViewModel)
+        {
+            var hasuser = await _userManager.FindByEmailAsync(resetPaswordViewModel.Email);
+            if (hasuser == null)
+            {
+                ModelState.AddModelError(string.Empty, "Bu email adresine ait kullanıcı bulunamadı.");
+                return View();
+            }
+
+            string passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(hasuser);
+            var passwordResetLink = Url.Action("ResetPassword", "Home", new
+            {
+                userId = hasuser.Id,
+                token = passwordResetToken
+            });
+
+            //https://localhost:7195
+            //uhqe npig hnsk nydp
+
+            await _emailServices.SendResetPasswordEmail(passwordResetLink, hasuser.Email);
+
+            TempData["SuccessMessage"] = "Şifre yenileme linki e-posta asdresinize gönderilmiştir.";
+
+            return RedirectToAction(nameof(ResetPassword));
+        }
+
+
+
 
 
         public IActionResult SignIn()
@@ -46,7 +84,7 @@ namespace AspNetCoreIdentityApp.Web.Controllers
                 return View();
             }
 
-            var signInResult = await _signInManager.PasswordSignInAsync(hasUser, model.Password, model.RememberMe,true);
+            var signInResult = await _signInManager.PasswordSignInAsync(hasUser, model.Password, model.RememberMe, true);
 
             if (signInResult.Succeeded)
             {
@@ -59,8 +97,8 @@ namespace AspNetCoreIdentityApp.Web.Controllers
                 return View();
             }
 
-            ModelState.AddModelErrorList(new List<string>() 
-            { 
+            ModelState.AddModelErrorList(new List<string>()
+            {
                 $"Email veya Şifre yanlış!",
                 $"Başarısız giriş sayısı:{await _userManager.GetAccessFailedCountAsync(hasUser)}"
             });
@@ -94,7 +132,7 @@ namespace AspNetCoreIdentityApp.Web.Controllers
                 return RedirectToAction(nameof(HomeController.SignUp));
             }
 
-            ModelState.AddModelErrorList(identityResul.Errors.Select(x=>x.Description).ToList());
+            ModelState.AddModelErrorList(identityResul.Errors.Select(x => x.Description).ToList());
 
             //foreach (IdentityError item in identityResul.Errors)
             //{
